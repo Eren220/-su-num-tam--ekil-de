@@ -1,0 +1,483 @@
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sayı Tahmin Oyunu + Rozet + Admin + Ses + Liderlik</title>
+<style>
+  body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #2a2a72, #009ffd);
+    color: #eee;
+    margin: 0; padding: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  header {
+    background: #222;
+    padding: 1em 2em;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 0 10px #0008;
+  }
+  h1 {
+    margin: 0;
+    font-weight: 700;
+    color: #ffdb58;
+  }
+  main {
+    flex: 1;
+    max-width: 500px;
+    width: 90%;
+    padding: 1em 2em;
+    background: rgba(0,0,0,0.3);
+    margin: 1em 0;
+    border-radius: 12px;
+    box-shadow: 0 0 15px #0008;
+  }
+  label, input, select, button {
+    font-size: 1rem;
+  }
+  input[type=text] {
+    padding: 0.5em;
+    border-radius: 5px;
+    border: none;
+    width: 100%;
+    margin-bottom: 0.8em;
+  }
+  button {
+    background: #ffdb58;
+    border: none;
+    padding: 0.6em 1.2em;
+    margin-top: 0.8em;
+    cursor: pointer;
+    font-weight: 600;
+    border-radius: 5px;
+    color: #222;
+    transition: background 0.3s;
+  }
+  button:hover {
+    background: #ffc107;
+  }
+  .hidden {
+    display: none;
+  }
+  .message {
+    margin: 1em 0;
+    padding: 1em;
+    background: #333;
+    border-radius: 8px;
+    text-align: center;
+  }
+  .scoreboard {
+    background: #111;
+    padding: 1em;
+    border-radius: 8px;
+    margin-top: 1em;
+  }
+  .scoreboard strong {
+    color: #ffdb58;
+  }
+  .badges {
+    margin-top: 1em;
+  }
+  .badges ul {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em;
+  }
+  .badges li {
+    background: #444;
+    border-radius: 8px;
+    padding: 0.5em 0.7em;
+    font-size: 0.9rem;
+    cursor: default;
+    user-select: none;
+    color: #ccc;
+    min-width: 80px;
+    text-align: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 5px transparent;
+  }
+  .badges li.unlocked {
+    background: #2ecc71;
+    color: white;
+    box-shadow: 0 0 8px #27ae60;
+  }
+  .badges li span.icon {
+    display: block;
+    font-size: 1.5rem;
+    margin-bottom: 0.2em;
+  }
+  .difficulty-select {
+    margin-top: 0.8em;
+  }
+  .actions {
+    margin-top: 1em;
+    display: flex;
+    justify-content: space-between;
+  }
+  .actions button {
+    flex: 1;
+    margin: 0 0.2em;
+  }
+  .leaderboard {
+    margin-top: 1em;
+    background: #111;
+    border-radius: 8px;
+    padding: 1em;
+    max-height: 150px;
+    overflow-y: auto;
+  }
+  .leaderboard h3 {
+    margin-top: 0;
+    color: #ffdb58;
+  }
+  .leaderboard ol {
+    padding-left: 1.2em;
+    color: #eee;
+  }
+  .leaderboard li {
+    margin-bottom: 0.4em;
+  }
+  footer {
+    text-align: center;
+    color: #aaa;
+    padding: 0.8em;
+    font-size: 0.9rem;
+  }
+  @media(max-width:480px) {
+    main {
+      width: 95%;
+      padding: 1em;
+    }
+    .badges ul {
+      justify-content: center;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Sayı Tahmin Oyunu + Rozet Sistemi</h1>
+</header>
+
+<main>
+  <!-- Giriş Ekranı -->
+  <div id="loginSection">
+    <label for="usernameInput">Kullanıcı Adı:</label>
+    <input type="text" id="usernameInput" placeholder="Adını gir..." autocomplete="off" />
+    <button id="loginBtn">Giriş Yap</button>
+  </div>
+
+  <!-- Oyun Alanı -->
+  <div id="gameSection" class="hidden">
+    <div>
+      <label for="difficultySelect">Zorluk Seviyesi:</label>
+      <select id="difficultySelect" class="difficulty-select" aria-label="Zorluk Seviyesi">
+        <option value="easy">Kolay (1-10)</option>
+        <option value="medium" selected>Orta (1-50)</option>
+        <option value="hard">Zor (1-100)</option>
+        <option value="impossible">İmkansız (1-1000)</option>
+      </select>
+    </div>
+
+    <div class="message" id="messageBox" aria-live="polite">Tahmin yapmaya başla!</div>
+
+    <input type="number" id="guessInput" placeholder="Tahminini yaz..." min="1" aria-label="Tahmin kutusu" />
+    <div class="actions">
+      <button id="guessBtn">Tahmin Et</button>
+      <button id="passBtn" title="Bir tahmin hakkını pas geç">Pas Geç</button>
+    </div>
+
+    <div class="scoreboard" aria-live="polite">
+      Skor: <strong id="scoreDisplay">0</strong> | Altın: <strong id="goldDisplay">0</strong>
+    </div>
+
+    <div class="badges" aria-label="Rozet Listesi">
+      <h3>Rozetlerin</h3>
+      <ul id="badgeList" role="list"></ul>
+    </div>
+
+    <div class="leaderboard" aria-label="Liderlik Tablosu">
+      <h3>Liderlik Tablosu</h3>
+      <ol id="leaderboardList"></ol>
+    </div>
+  </div>
+</main>
+
+<footer>
+  Eren’in Süper Sayı Tahmin Oyunu © 2025
+</footer>
+
+<script>
+(() => {
+  // Temel değişkenler
+  let username = "";
+  let score = 0;
+  let gold = 0;
+  let secretNumber = 0;
+  let attemptsLeft = 5;
+  let difficulty = "medium";
+  let maxNumber = 50;
+
+  // Rozetler (50+ tane, sadece örnek birkaç tane detaylı, diğerleri hızlı oluşturuldu)
+  const badges = [
+    {id:1, name:"Süper Başlangıç", icon:"🚀", desc:"İlk tahminini yaptın!"},
+    {id:2, name:"Doğru Tahminci", icon:"🎯", desc:"Doğru sayıyı buldun!"},
+    {id:3, name:"Pas Ustası", icon:"⏭️", desc:"Pas geçme hakkını kullandın!"},
+    {id:4, name:"Kolaycı", icon:"😌", desc:"Kolay seviyede oynadın!"},
+    {id:5, name:"Orta Oyuncu", icon:"🎮", desc:"Orta seviyede oynadın!"},
+    {id:6, name:"Zorlayıcı", icon:"💪", desc:"Zor seviyede oynadın!"},
+    {id:7, name:"İmkansız", icon:"🔥", desc:"İmkansız seviyede oynadın!"},
+    {id:8, name:"Hızlı", icon:"⚡", desc:"Hızlı tahmin ettin!"},
+    {id:9, name:"Skor Şampiyonu", icon:"🏆", desc:"En yüksek skoru kazandın!"},
+    {id:10, name:"Yönetici Girişi", icon:"👑", desc:"Gizli yönetici moduna girdin!"},
+  ];
+
+  // 50’den fazlasını hızlıca dolduralım:
+  for(let i=11; i<=60; i++) {
+    badges.push({
+      id: i,
+      name: `Rozet ${i}`,
+      icon: String.fromCodePoint(0x1F300 + i), // 🌀 gibi değişik semboller
+      desc: `Özel görev ${i} tamamlandı!`
+    });
+  }
+
+  // Kullanıcı verisi ve localStorage anahtarları
+  const STORAGE_KEY = "guessGameData";
+
+  // DOM elemanları
+  const loginSection = document.getElementById("loginSection");
+  const gameSection = document.getElementById("gameSection");
+  const usernameInput = document.getElementById("usernameInput");
+  const loginBtn = document.getElementById("loginBtn");
+  const difficultySelect = document.getElementById("difficultySelect");
+  const messageBox = document.getElementById("messageBox");
+  const guessInput = document.getElementById("guessInput");
+  const guessBtn = document.getElementById("guessBtn");
+  const passBtn = document.getElementById("passBtn");
+  const scoreDisplay = document.getElementById("scoreDisplay");
+  const goldDisplay = document.getElementById("goldDisplay");
+  const badgeList = document.getElementById("badgeList");
+  const leaderboardList = document.getElementById("leaderboardList");
+
+  // Ses efektleri
+  const soundCorrect = new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
+  const soundWrong = new Audio("https://actions.google.com/sounds/v1/cartoon/boing.ogg");
+  const soundPass = new Audio("https://actions.google.com/sounds/v1/cartoon/slide_whistle_to_drum_hit.ogg");
+
+  // Admin kontrolü için gizli kullanıcı adı
+  const ADMIN_USER = "erenkral";
+
+  // Veri yükleme ve kaydetme
+  function loadData() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const data = JSON.parse(saved);
+      if(data.username === username) {
+        score = data.score || 0;
+        gold = data.gold || 0;
+        unlockedBadges = new Set(data.unlockedBadges || []);
+        leaderboard = data.leaderboard || [];
+      }
+    }
+  }
+  function saveData() {
+    const data = {
+      username,
+      score,
+      gold,
+      unlockedBadges: Array.from(unlockedBadges),
+      leaderboard
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  // Rozet açma ve kontrol
+  let unlockedBadges = new Set();
+
+  function unlockBadge(id) {
+    if(!unlockedBadges.has(id)) {
+      unlockedBadges.add(id);
+      logMessage(`🏅 Rozet kazandın: ${badges.find(b=>b.id===id).name}`);
+      renderBadges();
+      saveData();
+    }
+  }
+
+  // Mesaj gösterimi
+  function logMessage(text) {
+    messageBox.textContent = text;
+  }
+
+  // Oyun başlangıcı
+  function startGame() {
+    attemptsLeft = 5;
+    switch(difficulty) {
+      case "easy": maxNumber = 10; break;
+      case "medium": maxNumber = 50; break;
+      case "hard": maxNumber = 100; break;
+      case "impossible": maxNumber = 1000; break;
+      default: maxNumber=50;
+    }
+    secretNumber = Math.floor(Math.random() * maxNumber) + 1;
+    guessInput.value = "";
+    guessInput.min = 1;
+    guessInput.max = maxNumber;
+    logMessage(`1 ile ${maxNumber} arasında bir sayı tuttum. Tahmin et!`);
+  }
+
+  // Skor ve altın göster
+  function updateScoreboard() {
+    scoreDisplay.textContent = score;
+    goldDisplay.textContent = gold;
+  }
+
+  // Rozet listesini göster
+  function renderBadges() {
+    badgeList.innerHTML = "";
+    badges.forEach(badge => {
+      const li = document.createElement("li");
+      li.className = unlockedBadges.has(badge.id) ? "unlocked" : "";
+      li.title = badge.desc;
+      li.innerHTML = `<span class="icon">${badge.icon}</span>${badge.name}`;
+      badgeList.appendChild(li);
+    });
+  }
+
+  // Liderlik tablosu
+  let leaderboard = [];
+
+  function updateLeaderboard() {
+    leaderboard.sort((a,b) => b.score - a.score);
+    leaderboardList.innerHTML = "";
+    leaderboard.slice(0,10).forEach((entry,i) => {
+      const li = document.createElement("li");
+      li.textContent = `${i+1}. ${entry.name} - ${entry.score}`;
+      leaderboardList.appendChild(li);
+    });
+  }
+
+  // Tahmin kontrolü
+  function checkGuess() {
+    const guess = Number(guessInput.value);
+    if (!guess || guess < 1 || guess > maxNumber) {
+      logMessage(`Lütfen 1 ile ${maxNumber} arasında bir sayı gir!`);
+      return;
+    }
+    attemptsLeft--;
+    if (guess === secretNumber) {
+      soundCorrect.play();
+      logMessage(`🎉 Tebrikler! Doğru sayıyı buldun: ${secretNumber}`);
+      score += 10 * (difficulty === "easy" ? 1 : difficulty === "medium" ? 2 : difficulty === "hard" ? 3 : 5);
+      gold += 5;
+      unlockBadge(2); // Doğru Tahminci rozet
+      updateScoreboard();
+      updateLeaderboardData();
+      startGame();
+    } else {
+      soundWrong.play();
+      if (guess < secretNumber) {
+        logMessage("🔼 Yukarı");
+      } else {
+        logMessage("🔽 Aşağı");
+      }
+      if (attemptsLeft <= 0) {
+        logMessage(`😞 Tahmin hakların bitti. Doğru sayı: ${secretNumber}`);
+        startGame();
+      }
+    }
+    guessInput.value = "";
+  }
+
+  // Pas geçme
+  function passTurn() {
+    if(attemptsLeft > 0) {
+      attemptsLeft--;
+      soundPass.play();
+      logMessage("⏭️ Pas geçtin, tahmin hakkın azaldı.");
+      unlockBadge(3); // Pas Ustası
+      if(attemptsLeft <= 0) {
+        logMessage(`Tahmin hakların bitti. Doğru sayı: ${secretNumber}`);
+        startGame();
+      }
+      updateScoreboard();
+    } else {
+      logMessage("Tahmin hakkın kalmadı!");
+    }
+  }
+
+  // Yönetici modu kontrolü
+  let isAdmin = false;
+
+  function checkAdmin() {
+    if(username.toLowerCase() === ADMIN_USER) {
+      isAdmin = true;
+      unlockBadge(10); // Yönetici Girişi
+      logMessage("👑 Yönetici modu etkin!");
+      // Admin özellikleri eklenebilir buraya
+    }
+  }
+
+  // Liderlik tablosu güncelle
+  function updateLeaderboardData() {
+    // Eğer skor yüksekse listeye ekle
+    let found = false;
+    for(let i=0; i<leaderboard.length; i++) {
+      if(leaderboard[i].name === username) {
+        if(score > leaderboard[i].score) leaderboard[i].score = score;
+        found = true;
+        break;
+      }
+    }
+    if(!found) {
+      leaderboard.push({name: username, score});
+    }
+    updateLeaderboard();
+    saveData();
+  }
+
+  // Olay dinleyiciler
+  loginBtn.addEventListener("click", () => {
+    const val = usernameInput.value.trim();
+    if(val.length < 3) {
+      alert("En az 3 karakter gir!");
+      return;
+    }
+    username = val;
+    loginSection.classList.add("hidden");
+    gameSection.classList.remove("hidden");
+    checkAdmin();
+    loadData();
+    renderBadges();
+    updateScoreboard();
+    updateLeaderboard();
+    startGame();
+  });
+
+  guessBtn.addEventListener("click", checkGuess);
+  guessInput.addEventListener("keydown", e => { if(e.key === "Enter") checkGuess(); });
+  passBtn.addEventListener("click", passTurn);
+
+  difficultySelect.addEventListener("change", () => {
+    difficulty = difficultySelect.value;
+    unlockBadge(difficulty === "easy" ? 4 : difficulty === "medium" ? 5 : difficulty === "hard" ? 6 : 7);
+    startGame();
+  });
+
+  // İlk render boş
+  renderBadges();
+
+})();
+</script>
+
+</body>
+</html>
